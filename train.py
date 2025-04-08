@@ -8,7 +8,7 @@ from sklearn.metrics import f1_score, confusion_matrix, accuracy_score
 from torch.utils.data import DataLoader
 from train_val_split import train_val_split1, train_val_split2
 #from models.our.our_model import ourModel
-from models.custom.custom_model import customModel as ourModel  # αλλαγή: import customModel
+from models.our.custom_model import customModel as ourModel  # αλλαγή: import customModel
 from dataset import *
 from custom_dataset import AudioVisualDataset  # αλλαγή: import custom dataset
 from utils.logger import get_logger
