@@ -77,9 +77,14 @@ class customModel(BaseModel, nn.Module):
         self.emo_pred = F.softmax(self.emo_logits, dim=-1)
 
     def backward(self):
-        loss_ce = self.criterion_ce(self.emo_logits, self.emo_label)
-        loss_focal = self.criterion_focal(self.emo_logits, self.emo_label)
-        total_loss = self.ce_weight * loss_ce + self.focal_weight * loss_focal
+        #loss_ce = self.criterion_ce(self.emo_logits, self.emo_label)
+        #loss_focal = self.criterion_focal(self.emo_logits, self.emo_label)
+        #total_loss = self.ce_weight * loss_ce + self.focal_weight * loss_focal
+        #total_loss.backward()
+
+        self.loss_emo_CE = self.criterion_ce(self.emo_logits, self.emo_label)
+        self.loss_EmoF_CE = self.criterion_focal(self.emo_logits, self.emo_label)
+        total_loss = self.ce_weight * self.loss_emo_CE + self.focal_weight * self.loss_EmoF_CE
         total_loss.backward()
 
         for model in self.model_names:
