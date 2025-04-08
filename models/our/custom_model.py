@@ -9,6 +9,7 @@ from models.base_model import BaseModel
 from models.networks.lstm import LSTMEncoder
 from models.networks.classifier import FcClassifier
 from models.utils.config import OptConfig
+import numpy as np
 
 
 class customModel(BaseModel, nn.Module):
