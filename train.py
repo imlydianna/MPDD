@@ -64,6 +64,7 @@ def train_model(train_json, model, audio_path='', video_path='', max_len=5,
     device = args.device
     print(f"device: {device}")
     model.to(device)
+    print("Training device:", device)
 
     # προσθήκη Class Weights στην CrossEntropyLoss                 
     model.criterion_ce = torch.nn.CrossEntropyLoss(weight=weights.to(device))
