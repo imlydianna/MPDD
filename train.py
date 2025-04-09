@@ -75,7 +75,7 @@ def train_model(train_json, model, audio_path='', video_path='', max_len=5,
 
     # Early Stopping variables
     early_stop_counter = 0
-    early_stop_patience = 10  # μπορώ να το προσαρμόσω
+    early_stop_patience = 20  # μπορώ να το προσαρμόσω
 
 
 
