@@ -14,6 +14,8 @@ from utils.logger import get_logger
 import numpy as np
 from collections import Counter # νέο 
 from torch.utils.data import WeightedRandomSampler # νέο
+from torch.optim.lr_scheduler import CosineAnnealingLR
+
 
 class Opt:
     def __init__(self, config_dict):
@@ -65,6 +67,7 @@ def train_model(train_json, model, audio_path='', video_path='', max_len=5,
     print(f"device: {device}")
     model.to(device)
     print("Training device:", device)
+    scheduler = CosineAnnealingLR(model.optimizer, T_max=num_epochs, eta_min=1e-6)
 
     # προσθήκη Class Weights στην CrossEntropyLoss                 
     model.criterion_ce = torch.nn.CrossEntropyLoss(weight=weights.to(device))
@@ -152,6 +155,11 @@ def train_model(train_json, model, audio_path='', video_path='', max_len=5,
                     f"Weighted F1: {emo_f1_weighted:.10f}, Unweighted F1: {emo_f1_unweighted:.10f}, "
                     f"Weighted Acc: {emo_acc_weighted:.10f}, Unweighted Acc: {emo_acc_unweighted:.10f}")
         logger.info('Confusion Matrix:\n{}'.format(emo_cm))
+
+        # Update learning rate (cosine annealing)
+        scheduler.step()
+        logger.info(f"Learning Rate after epoch {epoch + 1}: {scheduler.get_last_lr()[0]:.8f}")
+        
 
         if emo_f1_weighted > best_emo_f1:
             cur_time = time.strftime('%Y-%m-%d-%H.%M.%S', time.localtime(time.time()))
