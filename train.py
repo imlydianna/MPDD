@@ -70,7 +70,13 @@ def train_model(train_json, model, audio_path='', video_path='', max_len=5,
     model.to(device)
     print("Training device:", device)
     #scheduler = CosineAnnealingLR(model.optimizer, T_max=num_epochs, eta_min=1e-6)
+    # Reduce LR if no improvement
     scheduler = ReduceLROnPlateau(model.optimizer, mode='max', factor=0.5, patience=3, verbose=True)
+
+    # Early Stopping variables
+    early_stop_counter = 0
+    early_stop_patience = 10  # μπορώ να το προσαρμόσω
+
 
 
     # προσθήκη Class Weights στην CrossEntropyLoss                 
@@ -154,6 +160,7 @@ def train_model(train_json, model, audio_path='', video_path='', max_len=5,
         # evaluation
         label, pred, emo_acc_weighted, emo_acc_unweighted, emo_f1_weighted, emo_f1_unweighted, emo_cm = eval(model, val_loader,
                                                                                                 device)
+        # Step scheduler with current validation metric
         scheduler.step(emo_f1_weighted)  #  παρακολουθούμε το emo_f1_weighted ως βασικό metric για ReduceLROnPlateau
 
         current_lr = model.optimizer.param_groups[0]['lr']
@@ -173,6 +180,7 @@ def train_model(train_json, model, audio_path='', video_path='', max_len=5,
         
 
         if emo_f1_weighted > best_emo_f1:
+            early_stop_counter = 0  # reset counter - Early stopping
             cur_time = time.strftime('%Y-%m-%d-%H.%M.%S', time.localtime(time.time()))
             best_emo_f1 = emo_f1_weighted
             best_emo_f1_unweighted = emo_f1_unweighted
@@ -184,6 +192,14 @@ def train_model(train_json, model, audio_path='', video_path='', max_len=5,
             save_path = os.path.join(os.path.join(opt.checkpoints_dir, opt.name), best_model_name)
             torch.save(model.state_dict(), save_path)
             print("Saved best model.")
+        else:
+            early_stop_counter += 1
+            logger.info(f"No improvement. Early Stop Counter: {early_stop_counter}/{early_stop_patience}")
+
+        if early_stop_counter >= early_stop_patience:
+            logger.info("Early stopping triggered.")
+            break
+            
 
     logger.info(f"Training complete. Random seed: {seed}. Best epoch: {best_emo_epoch}.")
     logger.info(f"Best Weighted F1: {best_emo_f1:.4f}, Best Unweighted F1: {best_emo_f1_unweighted:.4f}, "
