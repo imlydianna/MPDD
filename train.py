@@ -8,7 +8,8 @@ from sklearn.metrics import f1_score, confusion_matrix, accuracy_score
 from torch.utils.data import DataLoader
 from train_val_split import train_val_split1, train_val_split2
 from models.our.our_model import ourModel
-from dataset import *
+#from dataset import *
+from custom_dataset import AudioVisualDataset  # το custom_dataset.py
 from utils.logger import get_logger
 import numpy as np
 from collections import Counter # νέο 
@@ -94,13 +95,13 @@ def train_model(train_json, model, audio_path='', video_path='', max_len=5,
         replacement=True  # True = oversampling ενεργό
     )
     
-
+    # Χρήση του use_mixup=True στο training dataset - επίσης μπορώ να παίξω με το mixup_alpha
     train_loader = DataLoader(
         AudioVisualDataset(train_data, args.labelcount, args.personalized_features_file, max_len,
                            batch_size=args.batch_size,
-                           audio_path=audio_path, video_path=video_path), batch_size=args.batch_size, shuffle=True)
+                           audio_path=audio_path, video_path=video_path, use_mixup=True, mixup_alpha=0.4), batch_size=args.batch_size, shuffle=True)
 
-
+    
     # Αντικατέστησα τον παραπάνω ορισμό του train_loader με αυτόν:
     #train_dataset = AudioVisualDataset(train_data, args.labelcount, args.personalized_features_file, max_len,
                                    #batch_size=args.batch_size,
@@ -113,11 +114,11 @@ def train_model(train_json, model, audio_path='', video_path='', max_len=5,
     #)
     # Δεν πειράζουμε τον validation loader. Θέλουμε να έχει κανονική κατανομή για να μετράμε τη γενίκευση.
 
-    
+    #  mixup OFF για validation
     val_loader = DataLoader(
         AudioVisualDataset(val_data, args.labelcount, args.personalized_features_file, max_len,
                            batch_size=args.batch_size,
-                           audio_path=audio_path, video_path=video_path), batch_size=args.batch_size, shuffle=False)
+                           audio_path=audio_path, video_path=video_path, use_mixup=False), batch_size=args.batch_size, shuffle=False)
 
     logger.info('The number of training samples = %d' % len(train_loader.dataset))
     logger.info('The number of val samples = %d' % len(val_loader.dataset))
