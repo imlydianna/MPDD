@@ -2,6 +2,7 @@ import json
 import torch
 import numpy as np
 from torch.utils.data import Dataset
+import os
 
 
 class AudioVisualDataset(Dataset):
