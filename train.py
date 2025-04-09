@@ -7,10 +7,8 @@ import torch
 from sklearn.metrics import f1_score, confusion_matrix, accuracy_score
 from torch.utils.data import DataLoader
 from train_val_split import train_val_split1, train_val_split2
-#from models.our.our_model import ourModel
-from models.our.custom_model import customModel as ourModel  # αλλαγή: import customModel
+from models.our.our_model import ourModel
 from dataset import *
-from custom_dataset import AudioVisualDataset  # αλλαγή: import custom dataset
 from utils.logger import get_logger
 import numpy as np
 
@@ -75,13 +73,11 @@ def train_model(train_json, model, audio_path='', video_path='', max_len=5,
     train_loader = DataLoader(
         AudioVisualDataset(train_data, args.labelcount, args.personalized_features_file, max_len,
                            batch_size=args.batch_size,
-                           audio_path=audio_path, video_path=video_path, augment=True),  # ενεργοποίηση augment
-        batch_size=args.batch_size, shuffle=True)
+                           audio_path=audio_path, video_path=video_path), batch_size=args.batch_size, shuffle=True)
     val_loader = DataLoader(
         AudioVisualDataset(val_data, args.labelcount, args.personalized_features_file, max_len,
                            batch_size=args.batch_size,
-                           audio_path=audio_path, video_path=video_path, augment=False), # no augment on val
-        batch_size=args.batch_size, shuffle=False)
+                           audio_path=audio_path, video_path=video_path), batch_size=args.batch_size, shuffle=False)
 
     logger.info('The number of training samples = %d' % len(train_loader.dataset))
     logger.info('The number of val samples = %d' % len(val_loader.dataset))
@@ -183,7 +179,6 @@ if __name__ == '__main__':
                         help="Number of epochs to train the model")
     parser.add_argument('--device', type=str, default='cpu',
                         help="Device to train the model on, e.g. 'cuda' or 'cpu'")
-    parser.add_argument('--use_mixup', action='store_true', help="Use mixup augmentation")  # νέα παράμετρος
 
     args = parser.parse_args()
 
@@ -197,7 +192,6 @@ if __name__ == '__main__':
     opt.emo_output_dim = args.labelcount
     opt.feature_max_len = args.feature_max_len
     opt.lr = args.lr
-    opt.use_mixup = args.use_mixup  # πέρασμα mixup στο model
 
     # Splice out feature folder paths according to incoming audio and video feature types
     audio_path = os.path.join(args.data_rootpath, 'Training', f"{args.splitwindow_time}", 'Audio', f"{args.audiofeature_method}") + '/'
