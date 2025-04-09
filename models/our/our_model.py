@@ -183,6 +183,7 @@ class ActivateFun(torch.nn.Module):
             return self._gelu(x)
 
 
+'''
 class Focal_Loss(torch.nn.Module):
     def __init__(self, weight=0.5, gamma=3, reduction='mean'):
         super(Focal_Loss, self).__init__()
@@ -207,3 +208,31 @@ class Focal_Loss(torch.nn.Module):
             return torch.sum(focal_loss)
         else:
             raise NotImplementedError("Invalid reduction mode. Please choose 'none', 'mean', or 'sum'.")
+'''
+
+class Focal_Loss(torch.nn.Module):
+    def __init__(self, alpha=None, gamma=2, reduction='mean'):
+        super(Focal_Loss, self).__init__()
+        self.alpha = alpha  # Αυτό μπορεί να είναι tensor με class weights
+        self.gamma = gamma
+        self.reduction = reduction
+
+    def forward(self, preds, targets):
+        ce_loss = F.cross_entropy(preds, targets, reduction='none')  # per-sample loss
+        pt = torch.exp(-ce_loss)  # prob of correct class
+
+        if self.alpha is not None:
+            at = self.alpha[targets]  # παίρνεις weight για κάθε δείγμα ανάλογα με το target
+        else:
+            at = 1.0
+
+        focal_loss = at * (1 - pt) ** self.gamma * ce_loss
+
+        if self.reduction == 'none':
+            return focal_loss
+        elif self.reduction == 'mean':
+            return focal_loss.mean()
+        elif self.reduction == 'sum':
+            return focal_loss.sum()
+        else:
+            raise NotImplementedError("Invalid reduction mode.")
