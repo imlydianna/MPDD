@@ -15,6 +15,8 @@ import numpy as np
 from collections import Counter # νέο 
 from torch.utils.data import WeightedRandomSampler # νέο
 from torch.optim.lr_scheduler import CosineAnnealingLR
+from torch.optim.lr_scheduler import ReduceLROnPlateau
+
 
 
 class Opt:
@@ -67,7 +69,9 @@ def train_model(train_json, model, audio_path='', video_path='', max_len=5,
     print(f"device: {device}")
     model.to(device)
     print("Training device:", device)
-    scheduler = CosineAnnealingLR(model.optimizer, T_max=num_epochs, eta_min=1e-6)
+    #scheduler = CosineAnnealingLR(model.optimizer, T_max=num_epochs, eta_min=1e-6)
+    scheduler = ReduceLROnPlateau(model.optimizer, mode='max', factor=0.5, patience=3, verbose=True)
+
 
     # προσθήκη Class Weights στην CrossEntropyLoss                 
     model.criterion_ce = torch.nn.CrossEntropyLoss(weight=weights.to(device))
@@ -150,15 +154,22 @@ def train_model(train_json, model, audio_path='', video_path='', max_len=5,
         # evaluation
         label, pred, emo_acc_weighted, emo_acc_unweighted, emo_f1_weighted, emo_f1_unweighted, emo_cm = eval(model, val_loader,
                                                                                                 device)
+        scheduler.step(emo_f1_weighted)  #  παρακολουθούμε το emo_f1_weighted ως βασικό metric για ReduceLROnPlateau
+
+        current_lr = model.optimizer.param_groups[0]['lr']
+        logger.info(f"Learning Rate: {current_lr:.8f}")
+ 
 
         logger.info(f"Epoch {epoch + 1}/{num_epochs}, Avg Loss: {avg_loss:.10f}, "
                     f"Weighted F1: {emo_f1_weighted:.10f}, Unweighted F1: {emo_f1_unweighted:.10f}, "
                     f"Weighted Acc: {emo_acc_weighted:.10f}, Unweighted Acc: {emo_acc_unweighted:.10f}")
         logger.info('Confusion Matrix:\n{}'.format(emo_cm))
-
+        
         # Update learning rate (cosine annealing)
-        scheduler.step()
-        logger.info(f"Learning Rate after epoch {epoch + 1}: {scheduler.get_last_lr()[0]:.8f}")
+        #scheduler.step()
+        #logger.info(f"Learning Rate after epoch {epoch + 1}: {scheduler.get_last_lr()[0]:.8f}")
+
+        
         
 
         if emo_f1_weighted > best_emo_f1:
