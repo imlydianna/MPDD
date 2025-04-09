@@ -90,7 +90,7 @@ def train_model(train_json, model, audio_path='', video_path='', max_len=5,
     # Δημιουργία Weighted Sampler
     sampler = WeightedRandomSampler(
         weights=sample_weights,
-        num_samples=len(sample_weights),
+        num_samples=int(1.2 * len(sample_weights)),  # 20% oversampling
         replacement=True  # True = oversampling ενεργό
     )
     
