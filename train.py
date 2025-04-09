@@ -191,13 +191,10 @@ if __name__ == '__main__':
     args.personalized_features_file = os.path.join(args.data_rootpath, 'Training', 'individualEmbedding', 'descriptions_embeddings_with_ids.npy')
 
     # νεο
-    with open(args.train_json, 'r') as f:
-        full_data = json.load(f)
-
     if args.track_option == 'Track1':
-        train_data, _, _, _ = train_val_split1(full_data, val_ratio=0.1, random_seed=3407)
+        train_data, _, _, _ = train_val_split1(args.train_json, val_ratio=0.1, random_seed=3407)
     else:
-        train_data, _, _, _ = train_val_split2(full_data, val_percentage=0.1, seed=3407)
+        train_data, _, _, _ = train_val_split2(args.train_json, val_percentage=0.1, seed=3407)
 
     label_key = {2: "bin_category", 3: "tri_category", 5: "pen_category"}[args.labelcount]
     class_counts = Counter([sample[label_key] for sample in train_data])
