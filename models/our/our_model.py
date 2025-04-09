@@ -255,7 +255,6 @@ class Focal_Loss(torch.nn.Module):
         # Αν targets είναι soft labels (Mixup), παράκαμψε focal loss
         if targets.dtype != torch.long and targets.dtype != torch.int:
             # προαιρετικό logging
-            print("⚠️ Skipping Focal Loss: received soft labels from Mixup.")
             return torch.tensor(0.0, device=preds.device, requires_grad=True)
     
         ce_loss = F.cross_entropy(preds, targets, reduction='none')
