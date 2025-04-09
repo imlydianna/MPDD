@@ -53,7 +53,7 @@ def eval(model, val_loader, device):
 
 
 def train_model(train_json, model, audio_path='', video_path='', max_len=5,
-                best_model_name='best_model.pth', seed=None):
+                best_model_name='best_model.pth', seed=None, weights=None):  # , weights=None
     """
     This is the traing function
     """
@@ -63,24 +63,17 @@ def train_model(train_json, model, audio_path='', video_path='', max_len=5,
     print(f"device: {device}")
     model.to(device)
 
+    # νέο                
+    model.criterion_ce = torch.nn.CrossEntropyLoss(weight=weights.to(device))
+
+
     # split training and validation set
     # data = json.load(open(train_json, 'r'))
     if args.track_option=='Track1':
         train_data, val_data, train_category_count, val_category_count = train_val_split1(train_json, val_ratio=0.1, random_seed=seed)
     elif args.track_option=='Track2':
         train_data, val_data, train_category_count, val_category_count = train_val_split2(train_json, val_percentage=0.1,
-                                                                                     seed=seed)
-        
-    # Υπολογίζω τα class weights στο train.py - μόλις γίνει το train_val_split, υπολογίζει αυτόματα τα weights για την εκάστοτε κλάση.
-    label_key = {2: "bin_category", 3: "tri_category", 5: "pen_category"}[args.labelcount]
-    class_counts = Counter([sample[label_key] for sample in train_data])
-    total = sum(class_counts.values())
-    num_classes = args.labelcount
-
-    weights = [1.0 / class_counts.get(i, 1) for i in range(num_classes)]
-    weights = torch.tensor(weights, dtype=torch.float32)
-    logger.info(f"Class weights: {weights}")
-    #
+                                                                                     seed=seed)     
 
     train_loader = DataLoader(
         AudioVisualDataset(train_data, args.labelcount, args.personalized_features_file, max_len,
@@ -197,6 +190,23 @@ if __name__ == '__main__':
     args.train_json = os.path.join(args.data_rootpath, 'Training', 'labels', 'Training_Validation_files.json')
     args.personalized_features_file = os.path.join(args.data_rootpath, 'Training', 'individualEmbedding', 'descriptions_embeddings_with_ids.npy')
 
+    # νεο
+    with open(args.train_json, 'r') as f:
+        full_data = json.load(f)
+
+    if args.track_option == 'Track1':
+        train_data, _, _, _ = train_val_split1(full_data, val_ratio=0.1, random_seed=3407)
+    else:
+        train_data, _, _, _ = train_val_split2(full_data, val_percentage=0.1, seed=3407)
+
+    label_key = {2: "bin_category", 3: "tri_category", 5: "pen_category"}[args.labelcount]
+    class_counts = Counter([sample[label_key] for sample in train_data])
+    num_classes = args.labelcount    
+    weights = [1.0 / class_counts.get(i, 1) for i in range(num_classes)]
+    weights = torch.tensor(weights, dtype=torch.float32)
+    # τέλος νεο
+   
+
     config = load_config('config.json')
     opt = Opt(config)
 
@@ -259,5 +269,6 @@ if __name__ == '__main__':
         best_model_name=best_model_name,
         audio_path=audio_path,
         video_path=video_path,
-        seed=seed
+        seed=seed,
+        weights=weights  # 👈 Εδώ
     )
