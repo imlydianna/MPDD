@@ -148,7 +148,14 @@ class ourModel(BaseModel, nn.Module):
 
     def backward(self):
         """Calculate the loss for back propagation"""
-        self.loss_emo_CE = self.criterion_ce(self.emo_logits, self.emo_label) 
+        #self.loss_emo_CE = self.criterion_ce(self.emo_logits, self.emo_label) 
+        # Αν οι ετικέτες είναι soft (από Mixup) - CE loss: Mixup-aware
+        if self.emo_label.dtype == torch.float32:
+            # Χρησιμοποιούμε soft cross-entropy
+            self.loss_emo_CE = torch.sum(-self.emo_label * F.log_softmax(self.emo_logits, dim=-1), dim=-1).mean()
+        else:
+            self.loss_emo_CE = self.criterion_ce(self.emo_logits, self.emo_label)
+
         self.loss_EmoF_CE = self.focal_weight * self.criterion_focal(self.emo_logits_fusion, self.emo_label)
         loss = self.loss_emo_CE + self.loss_EmoF_CE
 
