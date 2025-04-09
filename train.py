@@ -11,7 +11,8 @@ from models.our.our_model import ourModel
 from dataset import *
 from utils.logger import get_logger
 import numpy as np
-from collections import Counter
+from collections import Counter # νέο 
+from torch.utils.data import WeightedRandomSampler # νέο
 
 class Opt:
     def __init__(self, config_dict):
@@ -53,7 +54,7 @@ def eval(model, val_loader, device):
 
 
 def train_model(train_json, model, audio_path='', video_path='', max_len=5,
-                best_model_name='best_model.pth', seed=None, weights=None):  # , weights=None
+                best_model_name='best_model.pth', seed=None, weights=None):  # νέο όρισμα weights=None
     """
     This is the traing function
     """
@@ -63,7 +64,7 @@ def train_model(train_json, model, audio_path='', video_path='', max_len=5,
     print(f"device: {device}")
     model.to(device)
 
-    # νέο                
+    # προσθήκη Class Weights στην CrossEntropyLoss                 
     model.criterion_ce = torch.nn.CrossEntropyLoss(weight=weights.to(device))
 
 
@@ -73,12 +74,46 @@ def train_model(train_json, model, audio_path='', video_path='', max_len=5,
         train_data, val_data, train_category_count, val_category_count = train_val_split1(train_json, val_ratio=0.1, random_seed=seed)
     elif args.track_option=='Track2':
         train_data, val_data, train_category_count, val_category_count = train_val_split2(train_json, val_percentage=0.1,
-                                                                                     seed=seed)     
+                                                                                     seed=seed)
+
+    # Υπολογίζω sample weights ανά δείγμα:
+    label_key = {2: "bin_category", 3: "tri_category", 5: "pen_category"}[args.labelcount]
+    class_counts = Counter([sample[label_key] for sample in train_data])
+
+    # Δημιουργία λίστας με target labels για όλα τα δείγματα
+    targets = [sample[label_key] for sample in train_data]
+
+    # Αντιστροφή συχνότητας για κάθε κλάση
+    weights_per_class = {cls: 1.0 / count for cls, count in class_counts.items()}
+    sample_weights = [weights_per_class[t] for t in targets]
+
+    # Δημιουργία Weighted Sampler
+    sampler = WeightedRandomSampler(
+        weights=sample_weights,
+        num_samples=len(sample_weights),
+        replacement=True  # True = oversampling ενεργό
+    )
+    
+
+    #train_loader = DataLoader(
+    #    AudioVisualDataset(train_data, args.labelcount, args.personalized_features_file, max_len,
+    #                       batch_size=args.batch_size,
+    #                       audio_path=audio_path, video_path=video_path), batch_size=args.batch_size, shuffle=True)
+
+
+    # Αντικατέστησα τον παραπάνω ορισμό του train_loader με αυτόν:
+    train_dataset = AudioVisualDataset(train_data, args.labelcount, args.personalized_features_file, max_len,
+                                   batch_size=args.batch_size,
+                                   audio_path=audio_path, video_path=video_path)
 
     train_loader = DataLoader(
-        AudioVisualDataset(train_data, args.labelcount, args.personalized_features_file, max_len,
-                           batch_size=args.batch_size,
-                           audio_path=audio_path, video_path=video_path), batch_size=args.batch_size, shuffle=True)
+        train_dataset,
+        batch_size=args.batch_size,
+        sampler=sampler  # Εδώ αντί για shuffle=True
+    )
+    # Δεν πειράζουμε τον validation loader. Θέλουμε να έχει κανονική κατανομή για να μετράμε τη γενίκευση.
+
+    
     val_loader = DataLoader(
         AudioVisualDataset(val_data, args.labelcount, args.personalized_features_file, max_len,
                            batch_size=args.batch_size,
@@ -190,18 +225,21 @@ if __name__ == '__main__':
     args.train_json = os.path.join(args.data_rootpath, 'Training', 'labels', 'Training_Validation_files.json')
     args.personalized_features_file = os.path.join(args.data_rootpath, 'Training', 'individualEmbedding', 'descriptions_embeddings_with_ids.npy')
 
-    # νεο
+    # Υπολογισμός class weights βάσει της κατανομής των κλάσεων στο training set
+    # Δημιουργία training split
     if args.track_option == 'Track1':
         train_data, _, _, _ = train_val_split1(args.train_json, val_ratio=0.1, random_seed=3407)
     else:
         train_data, _, _, _ = train_val_split2(args.train_json, val_percentage=0.1, seed=3407)
-
+    
+    # Επιλογή σωστού label field (ανάλογα με το task)
     label_key = {2: "bin_category", 3: "tri_category", 5: "pen_category"}[args.labelcount]
     class_counts = Counter([sample[label_key] for sample in train_data])
     num_classes = args.labelcount    
+
+    # Αντιστροφή συχνότητας για κάθε κλάση
     weights = [1.0 / class_counts.get(i, 1) for i in range(num_classes)]
     weights = torch.tensor(weights, dtype=torch.float32)
-    # τέλος νεο
    
 
     config = load_config('config.json')
@@ -238,7 +276,7 @@ if __name__ == '__main__':
 
     model = ourModel(opt)
 
-    # Περνάω τα weights στο ourModel - αντικαθιστώ την default CrossEntropyLoss() με την "weighted" έκδοσή της
+    # Πέρασμα των weights στην CrossEntropyLoss του μοντέλου (λαμβάνει υπόψη της την ανισορροπία των κλάσεων)
     model.criterion_ce = torch.nn.CrossEntropyLoss(weight=weights.to(args.device))
 
     cur_time = time.strftime('%Y-%m-%d-%H.%M.%S', time.localtime(time.time()))
