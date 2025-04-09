@@ -95,22 +95,22 @@ def train_model(train_json, model, audio_path='', video_path='', max_len=5,
     )
     
 
-    #train_loader = DataLoader(
-    #    AudioVisualDataset(train_data, args.labelcount, args.personalized_features_file, max_len,
-    #                       batch_size=args.batch_size,
-    #                       audio_path=audio_path, video_path=video_path), batch_size=args.batch_size, shuffle=True)
+    train_loader = DataLoader(
+        AudioVisualDataset(train_data, args.labelcount, args.personalized_features_file, max_len,
+                           batch_size=args.batch_size,
+                           audio_path=audio_path, video_path=video_path), batch_size=args.batch_size, shuffle=True)
 
 
     # Αντικατέστησα τον παραπάνω ορισμό του train_loader με αυτόν:
-    train_dataset = AudioVisualDataset(train_data, args.labelcount, args.personalized_features_file, max_len,
-                                   batch_size=args.batch_size,
-                                   audio_path=audio_path, video_path=video_path)
+    #train_dataset = AudioVisualDataset(train_data, args.labelcount, args.personalized_features_file, max_len,
+                                   #batch_size=args.batch_size,
+                                   #audio_path=audio_path, video_path=video_path)
 
-    train_loader = DataLoader(
-        train_dataset,
-        batch_size=args.batch_size,
-        sampler=sampler  # Εδώ αντί για shuffle=True
-    )
+    #train_loader = DataLoader(
+        #train_dataset,
+        #batch_size=args.batch_size,
+        #sampler=sampler  # Εδώ αντί για shuffle=True
+    #)
     # Δεν πειράζουμε τον validation loader. Θέλουμε να έχει κανονική κατανομή για να μετράμε τη γενίκευση.
 
     
@@ -277,8 +277,8 @@ if __name__ == '__main__':
     model = ourModel(opt)
 
     # Πέρασμα των weights στην CrossEntropyLoss του μοντέλου (λαμβάνει υπόψη της την ανισορροπία των κλάσεων)
-    #model.criterion_ce = torch.nn.CrossEntropyLoss(weight=weights.to(args.device))
-    model.criterion_ce = torch.nn.CrossEntropyLoss()
+    model.criterion_ce = torch.nn.CrossEntropyLoss(weight=weights.to(args.device))
+    #model.criterion_ce = torch.nn.CrossEntropyLoss()
 
     cur_time = time.strftime('%Y-%m-%d-%H.%M.%S', time.localtime(time.time()))
     best_model_name = f"best_model_{cur_time}.pth"
