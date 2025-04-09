@@ -69,6 +69,17 @@ def train_model(train_json, model, audio_path='', video_path='', max_len=5,
     elif args.track_option=='Track2':
         train_data, val_data, train_category_count, val_category_count = train_val_split2(train_json, val_percentage=0.1,
                                                                                      seed=seed)
+        
+    # Υπολογίζω τα class weights στο train.py - μόλις γίνει το train_val_split, υπολογίζει αυτόματα τα weights για την εκάστοτε κλάση.
+    label_key = {2: "bin_category", 3: "tri_category", 5: "pen_category"}[args.labelcount]
+    class_counts = Counter([sample[label_key] for sample in train_data])
+    total = sum(class_counts.values())
+    num_classes = args.labelcount
+
+    weights = [1.0 / class_counts.get(i, 1) for i in range(num_classes)]
+    weights = torch.tensor(weights, dtype=torch.float32)
+    logger.info(f"Class weights: {weights}")
+    #
 
     train_loader = DataLoader(
         AudioVisualDataset(train_data, args.labelcount, args.personalized_features_file, max_len,
@@ -218,6 +229,9 @@ if __name__ == '__main__':
     logger = get_logger(logger_path, 'result')
 
     model = ourModel(opt)
+
+    # Περνάω τα weights στο ourModel - αντικαθιστώ την default CrossEntropyLoss() με την "weighted" έκδοσή της
+    model.criterion_ce = torch.nn.CrossEntropyLoss(weight=weights.to(args.device))
 
     cur_time = time.strftime('%Y-%m-%d-%H.%M.%S', time.localtime(time.time()))
     best_model_name = f"best_model_{cur_time}.pth"
