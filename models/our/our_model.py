@@ -244,36 +244,36 @@ class Focal_Loss(torch.nn.Module):
         else:
             raise NotImplementedError("Invalid reduction mode.")
     '''
-    class Focal_Loss(torch.nn.Module):
-        def __init__(self, alpha=None, gamma=2, reduction='mean'):
-            super(Focal_Loss, self).__init__()
-            self.alpha = alpha  # tensor με class weights
-            self.gamma = gamma
-            self.reduction = reduction
+class Focal_Loss(torch.nn.Module):
+    def __init__(self, alpha=None, gamma=2, reduction='mean'):
+        super(Focal_Loss, self).__init__()
+        self.alpha = alpha  # tensor με class weights
+        self.gamma = gamma
+        self.reduction = reduction
+
+    def forward(self, preds, targets):
+        # Αν targets είναι soft labels (Mixup), παράκαμψε focal loss
+        if targets.dtype != torch.long and targets.dtype != torch.int:
+            # προαιρετικό logging
+            print("⚠️ Skipping Focal Loss: received soft labels from Mixup.")
+            return torch.tensor(0.0, device=preds.device, requires_grad=True)
     
-        def forward(self, preds, targets):
-            # Αν targets είναι soft labels (Mixup), παράκαμψε focal loss
-            if targets.dtype != torch.long and targets.dtype != torch.int:
-                # προαιρετικό logging
-                print("⚠️ Skipping Focal Loss: received soft labels from Mixup.")
-                return torch.tensor(0.0, device=preds.device, requires_grad=True)
-        
-            ce_loss = F.cross_entropy(preds, targets, reduction='none')
-            pt = torch.exp(-ce_loss)
-        
-            if self.alpha is not None:
-                at = self.alpha[targets]  # indexing με ακέραιους δείκτες
-            else:
-                at = 1.0
-        
-            focal_loss = at * (1 - pt) ** self.gamma * ce_loss
-        
-            if self.reduction == 'none':
-                return focal_loss
-            elif self.reduction == 'mean':
-                return focal_loss.mean()
-            elif self.reduction == 'sum':
-                return focal_loss.sum()
-            else:
-                raise NotImplementedError("Invalid reduction mode.")
-        
+        ce_loss = F.cross_entropy(preds, targets, reduction='none')
+        pt = torch.exp(-ce_loss)
+    
+        if self.alpha is not None:
+            at = self.alpha[targets]  # indexing με ακέραιους δείκτες
+        else:
+            at = 1.0
+    
+        focal_loss = at * (1 - pt) ** self.gamma * ce_loss
+    
+        if self.reduction == 'none':
+            return focal_loss
+        elif self.reduction == 'mean':
+            return focal_loss.mean()
+        elif self.reduction == 'sum':
+            return focal_loss.sum()
+        else:
+            raise NotImplementedError("Invalid reduction mode.")
+    
