@@ -276,9 +276,14 @@ if __name__ == '__main__':
 
     model = ourModel(opt)
 
-    # Πέρασμα των weights στην CrossEntropyLoss του μοντέλου (λαμβάνει υπόψη της την ανισορροπία των κλάσεων)
+    # Δημιουργία class-weighted CE loss
     model.criterion_ce = torch.nn.CrossEntropyLoss(weight=weights.to(args.device))
     #model.criterion_ce = torch.nn.CrossEntropyLoss()
+
+    # Αν έχει ενεργό focal loss, πέρασέ του τα ίδια class weights
+    if hasattr(model, 'criterion_focal') and model.criterion_focal is not None:
+        model.criterion_focal.alpha = weights.to(args.device)  # Εδώ περνάμε τα weights στην Focal
+    
 
     cur_time = time.strftime('%Y-%m-%d-%H.%M.%S', time.localtime(time.time()))
     best_model_name = f"best_model_{cur_time}.pth"
