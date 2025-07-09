@@ -10,10 +10,7 @@ from models.utils.config import OptConfig
 import math
 import torch.nn as nn
 
-# =================================================================================
-# ΚΥΡΙΩΣ ΜΟΝΤΕΛΟ - Με βελτιώσεις στην αρχιτεκτονική και τη διαχείριση των features
-# =================================================================================
-
+'''
 class ourModel(BaseModel, nn.Module):
     def __init__(self, opt):
         """
@@ -356,12 +353,9 @@ class ActivateFun(torch.nn.Module):
             return torch.relu(x)
         elif self.activate_fun == 'gelu':
             return self._gelu(x)
-'''
 
 
-# =================================================================================
 # FOCAL LOSS - Με βελτιώσεις για να δουλεύει σωστά με class weights και mixup
-# =================================================================================
 
 class Focal_Loss(nn.Module):
     """
