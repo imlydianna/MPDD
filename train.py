@@ -267,6 +267,8 @@ if __name__ == '__main__':
             opt.input_dim_v = np.load(os.path.join(video_path, filename)).shape[1]            
             break
             
+    opt.input_dim_p = 768  # Διάσταση του embedding από το personalized features file
+
     model = ourModel(opt)
 
     # --- LOGGING & TRAINING ---
