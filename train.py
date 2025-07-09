@@ -98,45 +98,7 @@ def train_model(train_json, model, audio_path, video_path, max_len,
     elif args.track_option=='Track2':
         train_data, val_data, train_category_count, val_category_count = train_val_split2(train_json, val_percentage=0.1,
                                                                                      seed=seed)
-    '''
-    # Υπολογίζω sample weights ανά δείγμα:
-    label_key = {2: "bin_category", 3: "tri_category", 5: "pen_category"}[args.labelcount]
-    class_counts = Counter([sample[label_key] for sample in train_data])
-
-    # Δημιουργία λίστας με target labels για όλα τα δείγματα
-    targets = [sample[label_key] for sample in train_data]
-
-    # Αντιστροφή συχνότητας για κάθε κλάση
-    weights_per_class = {cls: 1.0 / count for cls, count in class_counts.items()}
-    sample_weights = [weights_per_class[t] for t in targets]
-
-    # Δημιουργία Weighted Sampler
-    sampler = WeightedRandomSampler(
-        weights=sample_weights,
-        num_samples=int(1.1 * len(sample_weights)),  # 10% oversampling
-        replacement=True  # True = oversampling ενεργό
-    )
     
-    # Χρήση του use_mixup=True στο training dataset - επίσης μπορώ να παίξω με το mixup_alpha
-    train_loader = DataLoader(
-        AudioVisualDataset(train_data, args.labelcount, args.personalized_features_file, max_len,
-                           batch_size=args.batch_size,
-                           audio_path=audio_path, video_path=video_path, use_mixup=True, mixup_alpha=0.4), batch_size=args.batch_size, shuffle=True)
-    
-    
-    # Αντικατέστησα τον παραπάνω ορισμό του train_loader με αυτόν:
-    #train_dataset = AudioVisualDataset(train_data, args.labelcount, args.personalized_features_file, max_len,
-                                   #batch_size=args.batch_size,
-                                   #audio_path=audio_path, video_path=video_path)
-
-    #train_loader = DataLoader(
-        #train_dataset,
-        #batch_size=args.batch_size,
-        #sampler=sampler  # Εδώ αντί για shuffle=True
-    #)
-    # Δεν πειράζουμε τον validation loader. Θέλουμε να έχει κανονική κατανομή για να μετράμε τη γενίκευση.
-'''
-
     # Δημιουργία Datasets και DataLoaders
     # Mixup=True για data augmentation στο training set
     train_dataset = AudioVisualDataset(train_data, args.labelcount, args.personalized_features_file, max_len,
